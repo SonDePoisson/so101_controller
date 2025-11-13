@@ -11,15 +11,14 @@ SO101_PORT = os.getenv("SO101_PORT")
 
 
 def mujoco_to_servo(angle_rad):
-    # Conversion rad -> [0, 4096]
     return int((angle_rad / math.pi) * 2048 + 2048)
 
 
-def control_loop(driver, data, stop_flag):
+def control_loop(driver: SO101Driver, data, stop_flag):
     while not stop_flag.is_set():
-        # Exemple sur un seul joint
-        target = mujoco_to_servo(data.qpos[0])
-        driver.move_servo(1, target, wait=False)
+        for id in driver.servo_ids:
+            target = mujoco_to_servo(data.qpos[id - 1])
+            driver.move_servo(id, target, wait=False)
         time.sleep(0.02)  # 50 Hz
 
 
