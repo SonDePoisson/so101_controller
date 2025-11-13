@@ -1,1 +1,5 @@
 typings
+__pycache__/
+joint_limits.yaml
+.vscode
+.venv/
