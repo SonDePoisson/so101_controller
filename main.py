@@ -19,7 +19,7 @@ def control_loop(driver: SO101Driver, data, stop_flag):
         for id in driver.servo_ids:
             target = mujoco_to_servo(data.qpos[id - 1])
             driver.move_servo(id, target, wait=False)
-        time.sleep(0.02)  # 50 Hz
+        time.sleep(1 / 60)  # Hz
 
 
 if __name__ == "__main__":
