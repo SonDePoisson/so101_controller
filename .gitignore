@@ -4,3 +4,4 @@ joint_limits.yaml
 .vscode
 .venv/
 .dev
+MUJOCO_LOG.TXT
