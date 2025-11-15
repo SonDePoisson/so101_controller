@@ -18,6 +18,13 @@ def mujoco_to_servo(angle_rad):
     return int((angle_rad / math.pi) * 2048 + 2048)
 
 
+def get_body_pose(model: mujoco.MjModel, data: mujoco.MjData, body_name: str = "target"):
+    body_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, body_name)
+    pos = np.array(data.xpos[body_id], dtype=float)
+    quat = np.array(data.xquat[body_id], dtype=float)
+    return pos, quat
+
+
 def control_loop(driver: SO101Driver, data: mujoco.MjData, stop_flag):
     while not stop_flag.is_set():
         for id in driver.servo_ids:
@@ -65,6 +72,7 @@ if __name__ == "__main__":
     # Main Loop #
     with mujoco.viewer.launch_passive(model, data) as viewer:
         while viewer.is_running():
+            target_pos, target_quat = get_body_pose(model, data)
             ik_solver.compute(data, target_pos, target_quat)
 
             mujoco.mj_step(model, data)
