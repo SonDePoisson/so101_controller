@@ -7,15 +7,15 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 
-from so101_driver.so101_driver import SO101Driver
-# from ik import InverseKinematics
-
-import mink
 from mink.contrib import TeleopMocap
 from loop_rate_limiters import RateLimiter
 
+from so101_driver.so101_driver import SO101Driver
+from ik import InverseKinematics
+
 SCENE_PATH = "SO-ARM100/Simulation/SO101/scene.xml"
 SO101_PORT = os.getenv("SO101_PORT")
+RATE = 60  # Hz
 
 
 def mujoco_to_servo(angle_rad):
@@ -34,7 +34,7 @@ def control_loop(driver: SO101Driver, data: mujoco.MjData, stop_flag):
         for id in driver.servo_ids:
             target = mujoco_to_servo(data.qpos[id - 1])
             driver.move_servo(id, target, wait=False)
-        time.sleep(1 / 60)  # 60 Hz
+        time.sleep(1 / RATE)  # 60 Hz
 
 
 if __name__ == "__main__":
@@ -55,29 +55,7 @@ if __name__ == "__main__":
     data = mujoco.MjData(model)
 
     # Init IK #
-    configuration = mink.Configuration(model)
-    tasks = [
-        end_effector_task := mink.FrameTask(
-            frame_name="gripperframe",
-            frame_type="site",
-            position_cost=1.0,
-            orientation_cost=1.0,
-            lm_damping=1e-6,
-        ),
-        posture_task := mink.PostureTask(model, cost=1e-3),
-    ]
-
-    limits = [
-        mink.ConfigurationLimit(model=configuration.model),
-    ]
-
-    mid = model.body("target").mocapid[0]
-
-    # IK settings.
-    solver = "daqp"
-    pos_threshold = 1e-4
-    ori_threshold = 1e-4
-    max_iters = 20
+    ik = InverseKinematics(model, data)
 
     # Initialize key_callback function.
     key_callback = TeleopMocap(data)
@@ -95,35 +73,13 @@ if __name__ == "__main__":
         stop_flag = None
         thread = None
 
+    rate = RateLimiter(frequency=RATE, warn=False)
+
     # Main Loop #
     with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as viewer:
-        configuration.update(data.qpos)
-        mujoco.mj_forward(model, data)
-
-        posture_task.set_target_from_configuration(configuration)
-
-        # Initialize the mocap target at the end-effector site.
-        mink.move_mocap_to_frame(model, data, "target", "attachment_site", "site")
-
-        rate = RateLimiter(frequency=200.0, warn=False)
         while viewer.is_running():
-            T_wt = mink.SE3.from_mocap_name(model, data, "target")
-            end_effector_task.set_target(T_wt)
+            ik.compute(model, data, key_callback, rate)
 
-            # Continuously check for autonomous key movement.
-            key_callback.auto_key_move()
-
-            # Compute velocity and integrate into the next configuration.
-            for i in range(max_iters):
-                vel = mink.solve_ik(configuration, tasks, rate.dt, solver, limits=limits)
-                configuration.integrate_inplace(vel, rate.dt)
-                err = end_effector_task.compute_error(configuration)
-                pos_achieved = np.linalg.norm(err[:3]) <= pos_threshold
-                ori_achieved = np.linalg.norm(err[3:]) <= ori_threshold
-                if pos_achieved and ori_achieved:
-                    break
-
-            data.ctrl = configuration.q
             mujoco.mj_step(model, data)
             viewer.sync()
             rate.sleep()
