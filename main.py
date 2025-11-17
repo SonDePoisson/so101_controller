@@ -15,7 +15,7 @@ from teleop import Teleop
 
 SCENE_PATH = "SO-ARM100/Simulation/SO101/scene.xml"
 SO101_PORT = os.getenv("SO101_PORT")
-RATE = 60  # Hz
+RATE = 200  # Hz
 
 
 def mujoco_to_servo(angle_rad):
