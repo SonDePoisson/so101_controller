@@ -1,7 +1,6 @@
 import numpy as np
 import mink
 import mujoco
-from mink.contrib import TeleopMocap
 from loop_rate_limiters import RateLimiter
 
 
@@ -41,11 +40,9 @@ class InverseKinematics:
 
         mink.move_mocap_to_frame(model, data, "target", "gripperframe", "site")
 
-    def compute(self, model: mujoco.MjModel, data: mujoco.MjData, key_callback: TeleopMocap, rate: RateLimiter):
+    def compute(self, model: mujoco.MjModel, data: mujoco.MjData, rate: RateLimiter):
         T_wt = mink.SE3.from_mocap_name(model, data, "target")
         self.ee_task.set_target(T_wt)
-
-        key_callback.auto_key_move()
 
         for i in range(self.max_iters):
             vel = mink.solve_ik(self.configuration, self.tasks, rate.dt, self.solver, limits=self.limits)

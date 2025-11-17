@@ -48,6 +48,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Run only the Mujoco simulation without controlling the real robot",
     )
+    parser.add_argument(
+        "--controller",
+        type=str,
+        default=None,
+        choices=["keyboard", "gamepad"],
+        help="Controller to use (keyboard or gamepad)",
+    )
     args = parser.parse_args()
 
     # Init MuJoCo #
@@ -57,8 +64,13 @@ if __name__ == "__main__":
     # Init IK #
     ik = InverseKinematics(model, data)
 
-    # Initialize key_callback function.
-    key_callback = Teleop(data)
+    # Initialize Controller
+    controller = None
+    key_callback = None
+    if args.controller == "keyboard":
+        key_callback = Teleop(data)
+    elif args.controller == "gamepad":
+        pass
 
     # Choose Simulation or Real Robot #
     driver = None
@@ -78,7 +90,10 @@ if __name__ == "__main__":
     # Main Loop #
     with mujoco.viewer.launch_passive(model, data, key_callback=key_callback) as viewer:
         while viewer.is_running():
-            ik.compute(model, data, key_callback, rate)
+            ik.compute(model, data, rate)
+
+            if key_callback is not None:
+                key_callback.auto_key_move()
 
             mujoco.mj_step(model, data)
             viewer.sync()
