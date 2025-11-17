@@ -10,6 +10,4 @@ class Teleop(TeleopMocap):
     def __init__(self, data):
         super().__init__(data)
 
-        # On remplace uniquement l’entrée correspondant à la rotation
-        # en conservant toutes les autres actions héritées.
         self.actions[keycodes.KEY_SPACE] = self.toggle_rotation
