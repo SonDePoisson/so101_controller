@@ -19,12 +19,13 @@ class InverseKinematics:
             ),
             posture_task := mink.PostureTask(model, cost=1e-3),
         ]
+        self.ee_task = end_effector_task
 
         self.limits = [
             mink.ConfigurationLimit(model=self.configuration.model),
         ]
 
-        mid = model.body("target").mocapid[0]
+        model.body("target").mocapid[0]
 
         # IK settings.
         self.solver = "daqp"
@@ -42,14 +43,14 @@ class InverseKinematics:
 
     def compute(self, model: mujoco.MjModel, data: mujoco.MjData, key_callback: TeleopMocap, rate: RateLimiter):
         T_wt = mink.SE3.from_mocap_name(model, data, "target")
-        self.tasks[0].set_target(T_wt)
+        self.ee_task.set_target(T_wt)
 
         key_callback.auto_key_move()
 
         for i in range(self.max_iters):
             vel = mink.solve_ik(self.configuration, self.tasks, rate.dt, self.solver, limits=self.limits)
             self.configuration.integrate_inplace(vel, rate.dt)
-            err = self.tasks[0].compute_error(self.configuration)
+            err = self.ee_task.compute_error(self.configuration)
             pos_achieved = np.linalg.norm(err[:3]) <= self.pos_threshold
             ori_achieved = np.linalg.norm(err[3:]) <= self.ori_threshold
             if pos_achieved and ori_achieved:
