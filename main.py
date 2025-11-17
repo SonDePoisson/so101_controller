@@ -37,8 +37,7 @@ def control_loop(driver: SO101Driver, data: mujoco.MjData, stop_flag):
         time.sleep(1 / RATE)  # 60 Hz
 
 
-if __name__ == "__main__":
-    # Argparse #
+def init_arg_parse():
     parser = argparse.ArgumentParser(
         prog="main.py",
         description="Launch SO101 Robot in Mujoco with real robot or just simulation",
@@ -55,7 +54,11 @@ if __name__ == "__main__":
         choices=["keyboard", "gamepad"],
         help="Controller to use (keyboard or gamepad)",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = init_arg_parse()
 
     # Init MuJoCo #
     model = mujoco.MjModel.from_xml_path(SCENE_PATH)
