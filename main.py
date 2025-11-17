@@ -7,11 +7,11 @@ import mujoco
 import mujoco.viewer
 import numpy as np
 
-from mink.contrib import TeleopMocap
 from loop_rate_limiters import RateLimiter
 
 from so101_driver.so101_driver import SO101Driver
 from ik import InverseKinematics
+from teleop import Teleop
 
 SCENE_PATH = "SO-ARM100/Simulation/SO101/scene.xml"
 SO101_PORT = os.getenv("SO101_PORT")
@@ -58,7 +58,7 @@ if __name__ == "__main__":
     ik = InverseKinematics(model, data)
 
     # Initialize key_callback function.
-    key_callback = TeleopMocap(data)
+    key_callback = Teleop(data)
 
     # Choose Simulation or Real Robot #
     driver = None
